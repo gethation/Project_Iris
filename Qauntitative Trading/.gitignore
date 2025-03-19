@@ -1,0 +1,4 @@
+*.log
+Data_base/ALL_stock_DATE_OHLC_dict
+__pycache__/
+*.pkl
