@@ -2,31 +2,20 @@ import backtrader as bt
 
 
 
-class MACDStrategy(bt.Strategy):
-    def __init__(self):
-        # 添加 MACD 指標
-        self.macd = bt.indicators.MACD(
-            period_me1=12, period_me2=26, period_signal=9, plot=True
-        )
-        # 初始化訂單追蹤變數
-        self.order = None
-        self.daily_records = {'cash': [], 'value': [], 'date':[]}
-        self.indicator = [{'MACD':[], 'Signal':[]}]
-        self.trade_records = []
+import backtrader as bt
 
+class Basic_Function(bt.Strategy):
     def log(self, txt, dt=None):
         ''' 記錄日誌 '''
         dt = dt or self.datas[0].datetime.date(0)
         print('%s, %s' % (dt.isoformat(), txt))
-
+    
     def notify_order(self, order):
         ''' 訂單通知 '''
-        # 尚未完成的訂單先略過
         if order.status in [order.Submitted, order.Accepted]:
             return
-
+        
         if order.status in [order.Completed]:
-            # 透過 order.info 區分是進場還是平倉
             trade_type = order.info.get('trade_type') if order.info else 'unknown'
             if order.isbuy():
                 self.log("BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm: %.2f" %
@@ -38,22 +27,35 @@ class MACDStrategy(bt.Strategy):
                          (order.executed.price,
                           order.executed.value,
                           order.executed.comm))
-            # 記錄交易資料：下單日期、類型、價格、成交量、成交金額與手續費
+            # 記錄交易資料
             self.trade_records.append({
                 'date': self.datas[0].datetime.date(0),
-                'trade_type': trade_type,       # entry (進場) 或 exit (平倉)
+                'trade_type': trade_type,
                 'order_side': 'buy' if order.isbuy() else 'sell',
                 'price': order.executed.price,
                 'size': order.executed.size,
                 'value': order.executed.value,
                 'commission': order.executed.comm,
             })
-            # 紀錄進場時的 bar
             self.bar_executed = len(self)
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log("Order Canceled/Margin/Rejected")
+        
         # 訂單處理完成後清空訂單追蹤
         self.order = None
+
+class MACDStrategy(Basic_Function):
+    def __init__(self):
+        # 呼叫基底策略的初始化函式
+        super().__init__()
+        # 添加 MACD 指標
+        self.macd = bt.indicators.MACD(
+            period_me1=12, period_me2=26, period_signal=9, plot=True
+        )
+        self.order = None
+        self.daily_records = {'cash': [], 'value': [], 'date': []}
+        self.indicator = [{'MACD': [], 'Signal': []}]
+        self.trade_records = []
 
     def next(self):
         # 若有掛單則暫不進行新下單

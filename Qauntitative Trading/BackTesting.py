@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from interactive_window import plot_stock_chart
 
 data_path = 'Data_base/ALL_stock_DATE_OHLC_dict/2330.csv'
-start_time = datetime.datetime(2022, 9, 1)
+start_time = datetime.datetime(2020, 1, 1)
 todate_time = datetime.datetime(2024, 1, 1)
 
 
@@ -44,19 +44,19 @@ if __name__ == '__main__':
     strat = results[0]
 
     # Output performance metrics
-    print("Sharpe Ratio:", strat.analyzers.sharpe.get_analysis())
-    print("Drawdown:", strat.analyzers.drawdown.get_analysis())
-    print("Trade Statistics:", strat.analyzers.trades.get_analysis())
-    print("Returns:", strat.analyzers.returns.get_analysis())
+    # print("Sharpe Ratio:", strat.analyzers.sharpe.get_analysis())
+    # print("Drawdown:", strat.analyzers.drawdown.get_analysis())
+    # print("Trade Statistics:", strat.analyzers.trades.get_analysis())
+    # print("Returns:", strat.analyzers.returns.get_analysis())
     returns, positions, transactions, gross_lev = strat.analyzers.pyfolio.get_pf_items()
 
-    qs.reports.metrics(returns, "SPY", mode='full')
-    print(strat.daily_records)
+    # qs.reports.metrics(returns, "SPY", mode='full')
     # Plot the results if needed
-    cerebro.plot()
-    plot_stock_chart(df = pd.read_csv(r'C:\Users\Huang\Work place\Qauntitative Trading\Data_base\ALL_stock_DATE_OHLC_dict\2330.csv'),
+    # cerebro.plot()
+    plot_stock_chart(df = pd.read_csv(data_path),
                      start_date = start_time, 
                      end_date = todate_time,
                      cash_value_list = strat.daily_records,
                      indicator_list = strat.indicator,
                      trade_information_list = strat.trade_records)
+    qs.reports.html(returns, "SPY", output="bench_mark.html")
