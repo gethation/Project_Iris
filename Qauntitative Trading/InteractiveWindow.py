@@ -2,7 +2,6 @@ import plotly.graph_objects as go
 import plotly.subplots as sp
 import pandas as pd
 from typing import List, Dict
-import datetime
 
 def plot_cash_value(fig, cash_value_list):
     fig.add_trace(

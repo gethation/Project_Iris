@@ -1,0 +1,5 @@
+backtrader==1.9.78.123
+plotly==6.0.0
+pandas==2.2.3
+tqdm==4.67.1
+finlab==1.2.21

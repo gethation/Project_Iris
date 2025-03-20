@@ -1,9 +1,6 @@
 import backtrader as bt
 
 
-
-import backtrader as bt
-
 class Basic_Function(bt.Strategy):
     def log(self, txt, dt=None):
         ''' 記錄日誌 '''
