@@ -3,31 +3,38 @@ import pandas as pd
 import quantstats as qs
 import datetime
 import plotly.graph_objects as go
-from interactive_window import plot_stock_chart
+from InteractiveWindow import plot_stock_chart
 
-data_path = 'Data_base/ALL_stock_DATE_OHLC_dict/2330.csv'
-start_time = datetime.datetime(2020, 1, 1)
-todate_time = datetime.datetime(2024, 1, 1)
-
+data_path = r'C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\BTCUSDT_all_1m_data.csv'
+start_time = datetime.datetime(2025, 3, 10, 0, 0, 0)
+todate_time = datetime.datetime(2025, 3, 22, 0, 0, 0)
 
 data = bt.feeds.GenericCSVData(
-    dataname=data_path,          # CSV 檔案路徑
-    fromdate=start_time,
-    todate=todate_time,
-    dtformat=('%Y-%m-%d'),             # 日期格式
-    datetime=0,                       # 日期所在欄位（索引從 0 開始）
-    open=1,                           # 開盤價所在欄位
-    high=2,                           # 最高價所在欄位
-    low=3,                            # 最低價所在欄位
-    close=4,                          # 收盤價所在欄位
-    volume=5,                         # 成交量所在欄位
-    openinterest=-1                   # 如果沒有持倉量欄位，設為 -1
+    dataname=data_path,            # CSV檔案路徑
+    dtformat=('%Y-%m-%d %H:%M:%S'),            # 日期時間格式
+    fromdate=start_time,   # 開始日期
+    todate=todate_time,   # 結束日期
+    timeframe=bt.TimeFrame.Minutes,           # 設定為秒級別
+    compression=1,                            # 每筆資料代表 1 秒
+    datetime=0,                               # 日期時間欄位在第 0 列
+    time=-1,                                  # 如果時間已包含在 datetime 裡就設為 -1
+    open=1,                                   # 開盤價欄位在 CSV 中的索引（依據你的檔案格式調整）
+    high=2,                                   # 最高價欄位索引
+    low=3,                                    # 最低價欄位索引
+    close=4,                                  # 收盤價欄位索引
+    volume=5,                                 # 成交量欄位索引
+    openinterest=-1                         # 沒有持倉量資料則設為 -1
 )
 
+
+cerebro = bt.Cerebro()
+
 if __name__ == '__main__':
-    from StrategyLib import MACDStrategy, SmaCross, KDStrategy
+    from StrategyLib import PercentageGridStrategy
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(MACDStrategy)
+    cerebro.broker.setcommission(commission=0.002)
+    cerebro.broker.setcash(1e6)  # 設定初始資金為 100,000
+    cerebro.addstrategy(PercentageGridStrategy)
     
     # Add data source
     cerebro.adddata(data)
@@ -44,19 +51,21 @@ if __name__ == '__main__':
     strat = results[0]
 
     # Output performance metrics
-    # print("Sharpe Ratio:", strat.analyzers.sharpe.get_analysis())
+    print("Sharpe Ratio:", strat.analyzers.sharpe.get_analysis())
     # print("Drawdown:", strat.analyzers.drawdown.get_analysis())
     # print("Trade Statistics:", strat.analyzers.trades.get_analysis())
-    # print("Returns:", strat.analyzers.returns.get_analysis())
+    print("Returns:", strat.analyzers.returns.get_analysis())
     returns, positions, transactions, gross_lev = strat.analyzers.pyfolio.get_pf_items()
-
-    # qs.reports.metrics(returns, "SPY", mode='full')
-    # Plot the results if needed
-    # cerebro.plot()
     plot_stock_chart(df = pd.read_csv(data_path),
                      start_date = start_time, 
                      end_date = todate_time,
                      cash_value_list = strat.daily_records,
-                     indicator_list = strat.indicator,
+                     indicator_list = None,
                      trade_information_list = strat.trade_records)
-    qs.reports.html(returns, "SPY", output="bench_mark.html")
+
+    # print(strat.initial_price, strat.grid_prices)
+
+    qs.reports.metrics(returns, mode='full')
+    # Plot the results if needed
+    cerebro.plot()
+    qs.reports.html(returns, output="bench_mark.html")

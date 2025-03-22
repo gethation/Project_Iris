@@ -92,12 +92,13 @@ def get_all_binance_klines(symbol, interval, start_time, end_time=None):
     return df
 
 # 設定起始時間，例如從 2021-01-01 開始（轉換為毫秒）
-start_time = int(pd.Timestamp('2025-3-19').timestamp() * 1000)
+start_time = int(pd.Timestamp('2025-3-10').timestamp() * 1000)
 # 如果需要限制結束時間，也可以設定，例如結束於 2021-01-02：
 # end_time = int(pd.Timestamp('2021-01-02').timestamp() * 1000)
 end_time = None  # 若為 None 則抓取到最新資料
 
 # 取得所有 BTCUSDT 1 分鐘 K 線資料，並顯示進度條
+
 df_all = get_all_binance_klines("BTCUSDT", "1m", start_time, end_time)
 
 # 儲存拼接後的 DataFrame 成 CSV 檔案

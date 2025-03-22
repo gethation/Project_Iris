@@ -10,7 +10,7 @@ def plot_cash_value(fig, cash_value_list):
             y=cash_value_list['value'],
             mode='lines',
             name='value',
-            hovertemplate='%{x|%Y-%m-%d}<br>value: %{y}<extra></extra>'
+            hovertemplate='%{x|%Y-%m-%d %H:%M:%S}<br>value: %{y}<extra></extra>'
         ),
         row=1, col=1
     )
@@ -30,7 +30,7 @@ def plot_candel_stick(fig, df):
     hover_text = []
     for i in range(len(df)):
         text = (
-            f"Date: {df['date'].iloc[i].strftime('%Y-%m-%d')}<br>"
+            f"Date: {df['date'].iloc[i].strftime('%Y-%m-%d %H:%M:%S')}<br>"
             f"Open: {df['open'].iloc[i]}<br>"
             f"High: {df['high'].iloc[i]}<br>"
             f"Low: {df['low'].iloc[i]}<br>"
@@ -76,9 +76,9 @@ def plot_trade_information(fig, trade_information_list, start_date, end_date):
                 x=buy_dates,
                 y=buy_prices,
                 mode='markers',
-                marker=dict(symbol='triangle-up', size=20, color='lightgreen'),
+                marker=dict(symbol='triangle-up', size=18, color='lightgreen'),
                 name='Buy',
-                hovertemplate='%{x|%Y-%m-%d}<br>Price: %{y}<extra></extra>'
+                hovertemplate='%{x|%Y-%m-%d %H:%M:%S}<br>Price: %{y}<extra></extra>'
             ),
             row=2, col=1
         )
@@ -105,12 +105,12 @@ def plot_volume(fig, df):
 
     fig.add_trace(
         go.Bar(x=df_up['date'], y=df_up['volume'], name='Volume Up', marker_color='lightgreen',
-               hovertemplate='%{x|%Y-%m-%d}<br> : %{y}<extra></extra>'),
+               hovertemplate='%{x|%Y-%m-%d %H:%M:%S}<br> : %{y}<extra></extra>'),
         row=3, col=1
     )
     fig.add_trace(
         go.Bar(x=df_down['date'], y=df_down['volume'], name='Volume Down', marker_color='red',
-               hovertemplate='%{x|%Y-%m-%d}<br> : %{y}<extra></extra>'),
+               hovertemplate='%{x|%Y-%m-%d %H:%M:%S}<br> : %{y}<extra></extra>'),
         row=3, col=1
     )
 
@@ -137,7 +137,7 @@ def plot_stock_chart(df,
                      indicator_list,
                      trade_information_list: List[Dict]) -> None:
     
-    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['open_time'])
     start_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
 
@@ -146,10 +146,10 @@ def plot_stock_chart(df,
     df.loc[:, 'Up'] = df['close'] > df['open']
 
     # 建立包含兩個子圖的圖形：上方為K線圖，下方為成交量圖
-    fig = sp.make_subplots(rows=4, cols=1, shared_xaxes=True,
+    fig = sp.make_subplots(rows=3, cols=1, shared_xaxes=True,
                             vertical_spacing=0,
-                            row_heights=[0.3, 1, 0.2, 0.4],
-                            subplot_titles=("2330 Stock Price", "", ""))
+                            row_heights=[0.3, 1, 0.2],
+                            subplot_titles=("BTC price", "", ""))
     
     fig = plot_cash_value(fig=fig, cash_value_list=cash_value_list)
     fig = plot_candel_stick(fig=fig, df=df)
@@ -158,15 +158,15 @@ def plot_stock_chart(df,
                                  start_date=start_date,
                                  end_date=end_date)
     fig = plot_volume(fig=fig, df=df)
-    fig = plot_indicator(fig=fig,
-                         indicator_list=indicator_list,
-                         cash_value_list=cash_value_list)
+    # fig = plot_indicator(fig=fig,
+    #                      indicator_list=indicator_list,
+    #                      cash_value_list=cash_value_list)
 
     fig.update_xaxes(rangeslider_visible=False, row=2, col=1)
 
     # 更新佈局設定
     fig.update_layout(
-        title="Apple Stock Price and Volume",
+        title="Monitor",
         xaxis_rangeslider_visible=False,
         plot_bgcolor='white',  # 圖表背景色
         paper_bgcolor='white',  # 整個畫布背景色
