@@ -1,1 +1,11 @@
 Qauntitative Trading/bench_mark.html
+DataAnalysis\DataBase
+*.log
+Qauntitative Trading/DataBase/ALL_stock_DATE_OHLC_dict
+Qauntitative Trading/Cache
+Benchmark.html
+__pycache__/
+BTCUSDT_all_1m_data.csv
+*.pkl
+DataAnalysis/DataBase
+Qauntitative Trading/DataBase/BTCUSDT_all_1d_data.csv

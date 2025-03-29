@@ -148,7 +148,7 @@ def plot_stock_chart(df,
     # 建立包含兩個子圖的圖形：上方為K線圖，下方為成交量圖
     fig = sp.make_subplots(rows=3, cols=1, shared_xaxes=True,
                             vertical_spacing=0,
-                            row_heights=[0.3, 1, 0.2],
+                            row_heights=[0.8, 1, 0.2],
                             subplot_titles=("BTC price", "", ""))
     
     fig = plot_cash_value(fig=fig, cash_value_list=cash_value_list)

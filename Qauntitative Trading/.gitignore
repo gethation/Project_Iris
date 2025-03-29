@@ -1,6 +1,0 @@
-*.log
-DataBase/ALL_stock_DATE_OHLC_dict
-Benchmark.html
-__pycache__/
-BTCUSDT_all_1m_data.csv
-*.pkl

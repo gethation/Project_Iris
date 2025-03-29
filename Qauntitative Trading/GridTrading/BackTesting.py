@@ -3,13 +3,15 @@ import pandas as pd
 import quantstats as qs
 import datetime
 import plotly.graph_objects as go
+import os
 from InteractiveWindow import plot_stock_chart
+import pickle
 
-data_path = r'C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\BTCUSDT_all_1m_data.csv'
-start_time = datetime.datetime(2025, 3, 10, 0, 0, 0)
-todate_time = datetime.datetime(2025, 3, 22, 0, 0, 0)
+data_path = r'C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\DataBase\BTCUSDT_all_1m_data.csv'
+start_time = datetime.datetime(2024, 1, 1, 0, 0, 0)
+todate_time = datetime.datetime(2025, 3, 24, 0, 0, 0)
 
-data = bt.feeds.GenericCSVData(
+minute_data = bt.feeds.GenericCSVData(
     dataname=data_path,            # CSV檔案路徑
     dtformat=('%Y-%m-%d %H:%M:%S'),            # 日期時間格式
     fromdate=start_time,   # 開始日期
@@ -26,18 +28,17 @@ data = bt.feeds.GenericCSVData(
     openinterest=-1                         # 沒有持倉量資料則設為 -1
 )
 
-
-cerebro = bt.Cerebro()
-
 if __name__ == '__main__':
-    from StrategyLib import PercentageGridStrategy
+    from GridTrading.StrategyLib import PercentageGridStrategy, Locater
     cerebro = bt.Cerebro()
-    cerebro.broker.setcommission(commission=0.002)
-    cerebro.broker.setcash(1e6)  # 設定初始資金為 100,000
+    cerebro.broker.setcommission(commission=0.001)
+    cerebro.broker.setcash(1e8)  # 設定初始資金為 100,000
     cerebro.addstrategy(PercentageGridStrategy)
     
     # Add data source
-    cerebro.adddata(data)
+    cerebro.adddata(minute_data)
+    # cerebro.resampledata(minute_data, timeframe=bt.TimeFrame.Days, compression=1)
+
     
     # Add analyzers: Sharpe Ratio, Drawdown, Trade Statistics, and Returns
     cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
@@ -54,18 +55,16 @@ if __name__ == '__main__':
     print("Sharpe Ratio:", strat.analyzers.sharpe.get_analysis())
     # print("Drawdown:", strat.analyzers.drawdown.get_analysis())
     # print("Trade Statistics:", strat.analyzers.trades.get_analysis())
-    print("Returns:", strat.analyzers.returns.get_analysis())
+    # print("Returns:", strat.analyzers.returns.get_analysis())
     returns, positions, transactions, gross_lev = strat.analyzers.pyfolio.get_pf_items()
-    plot_stock_chart(df = pd.read_csv(data_path),
-                     start_date = start_time, 
-                     end_date = todate_time,
-                     cash_value_list = strat.daily_records,
-                     indicator_list = None,
-                     trade_information_list = strat.trade_records)
+    # plot_stock_chart(df = pd.read_csv(data_path),
+    #                  start_date = start_time, 
+    #                  end_date = todate_time,
+    #                  cash_value_list = strat.daily_records,
+    #                  indicator_list = None,
+    #                  trade_information_list = strat.trade_records)
 
-    # print(strat.initial_price, strat.grid_prices)
-
-    qs.reports.metrics(returns, mode='full')
+    # qs.reports.metrics(returns, mode='full')
     # Plot the results if needed
-    cerebro.plot()
-    qs.reports.html(returns, output="bench_mark.html")
+    qs.reports.html(returns, output=r"DataBase\bench_mark.html")
+    os.startfile(r"C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\Database\bench_mark.html")
