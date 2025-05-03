@@ -73,7 +73,7 @@ def get_all_binance_klines(symbol, interval, start_time, end_time=None):
         start_time = last_time + 1
         
         # 為避免 API 過於頻繁，稍作延遲
-        time.sleep(0.3)
+        time.sleep(0.01)
     
     pbar.close()
     
@@ -92,15 +92,15 @@ def get_all_binance_klines(symbol, interval, start_time, end_time=None):
     return df
 
 # 設定起始時間，例如從 2021-01-01 開始（轉換為毫秒）
-start_time = int(pd.Timestamp('2018-1-1').timestamp() * 1000)
+start_time = int(pd.Timestamp('2025-1-1').timestamp() * 1000)
 # 如果需要限制結束時間，也可以設定，例如結束於 2021-01-02：
-end_time = int(pd.Timestamp('2025-3-27').timestamp() * 1000)
+# end_time = int(pd.Timestamp('2025-3-29').timestamp() * 1000)
 # end_time = None  # 若為 None 則抓取到最新資料
 
 # 取得所有 BTCUSDT 1 分鐘 K 線資料，並顯示進度條
 
-df_all = get_all_binance_klines("BTCUSDT", "5m", start_time, end_time)
+df_all = get_all_binance_klines("BTCUSDT", "5m", start_time, None)
 
 # 儲存拼接後的 DataFrame 成 CSV 檔案
-df_all.to_csv(r"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\BTCUSDT_all_5m_data.csv", index=False, encoding="utf-8-sig")
+df_all.to_csv(r"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\BTC_5m.csv", index=False, encoding="utf-8-sig")
 print("所有資料已儲存至 BTCUSDT_all_1d_data.csv")

@@ -4,12 +4,11 @@ import quantstats as qs
 import datetime
 import plotly.graph_objects as go
 import os
-from InteractiveWindow import plot_stock_chart
 import pickle
 
-data_path = r'C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\DataBase\BTCUSDT_all_1d_data.csv'
-start_time = datetime.datetime(2024, 1, 2, 0, 0, 0)
-todate_time = datetime.datetime(2025, 3, 24, 0, 0, 0)
+data_path = r"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\BTCUSDT_all_1d_data.csv"
+start_time = datetime.datetime(2024, 2, 10, 0, 0, 0)
+todate_time = datetime.datetime(2024, 11, 6, 0, 0, 0)
 
 days_data = bt.feeds.GenericCSVData(
     dataname=data_path,            # CSV檔案路徑
@@ -29,22 +28,16 @@ days_data = bt.feeds.GenericCSVData(
 )
 
 if __name__ == '__main__':
-    from GridTrading.StrategyLib import PercentageGridStrategy, Locater, Hedger
+    from StrategyLib import Hedger
     cerebro = bt.Cerebro()
     cerebro.broker.setcommission(commission=0.001)
-    cerebro.broker.setcash(1e6)  # 設定初始資金為 100,000
+    cerebro.broker.setcash(1e5)  # 設定初始資金為 100,000
     cerebro.addstrategy(Hedger)
     
     # Add data source
     cerebro.adddata(days_data)
-    # cerebro.resampledata(minute_data, timeframe=bt.TimeFrame.Days, compression=1)
 
     
-    # Add analyzers: Sharpe Ratio, Drawdown, Trade Statistics, and Returns
-    # cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
-    # cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-    # cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
-    # cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
     cerebro.addanalyzer(bt.analyzers.PyFolio, _name='pyfolio')
     
     # Run backtest
@@ -57,17 +50,10 @@ if __name__ == '__main__':
     # print("Trade Statistics:", strat.analyzers.trades.get_analysis())
     # print("Returns:", strat.analyzers.returns.get_analysis())
     returns, positions, transactions, gross_lev = strat.analyzers.pyfolio.get_pf_items()
-    # plot_stock_chart(df = pd.read_csv(data_path),
-    #                  start_date = start_time, 
-    #                  end_date = todate_time,
-    #                  cash_value_list = strat.daily_records,
-    #                  indicator_list = None,
-    #                  trade_information_list = strat.trade_records)
 
-    # qs.reports.metrics(returns, mode='full')
     # Plot the results if needed
-    with open(r"DataBase\macd_record.pkl", "wb") as file:
+    with open(r"C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\Cache\macd_record.pkl", "wb") as file:
         pickle.dump(strat.macd_record, file)
-    qs.reports.html(returns, output=r"DataBase\bench_mark.html")
-    os.startfile(r"C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\Database\bench_mark.html")
+    qs.reports.html(returns, output=r"C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\Cache\bench_mark.html")
+    os.startfile(r"C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\Cache\bench_mark.html")
     cerebro.plot()

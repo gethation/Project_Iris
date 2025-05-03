@@ -53,9 +53,9 @@ class Basic_Function(bt.Strategy):
 
 class PercentageGridStrategy(Basic_Function):
     params = (
-        ('price_pct', 0.025),      # 网格间距百分比（1%）
-        ('base_pct', 0.01),         # 基础交易量
-        ('grid_levels', 50),        # 单边网格层数
+        ('price_pct', 1.5/100),      # 网格间距百分比（1%）
+        ('base_pct', 1/100),         # 基础交易量
+        ('grid_levels', 100),        # 单边网格层数
         ('max_position', 100),    # 最大持仓绝对值
         ('price_precision', 2),# 价格精度
         ('sma_period', 20)
@@ -72,10 +72,13 @@ class PercentageGridStrategy(Basic_Function):
         self.sma = bt.indicators.SimpleMovingAverage(
             self.data.close, period=self.params.sma_period)
 
-        with open(r"DataBase\trading_period.pkl", "rb") as file:
-            self.trading_period = pickle.load(file)
-        with open(r"DataBase\macd_record.pkl", "rb") as file:
+        # with open(r"DataBase\trading_period.pkl", "rb") as file:
+        #     self.trading_period = pickle.load(file)
+        with open(r'C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\Cache\macd_record.pkl', "rb") as file:
             self.macd_record = pickle.load(file)
+
+        self.uper_grid = 1
+        self.down_grid = 1
 
         self.current_hedgePosition = 0
         
@@ -83,7 +86,13 @@ class PercentageGridStrategy(Basic_Function):
         """Init the grid"""
 
         self.base_price = round(self.sma[0], self.p.price_precision)
-        self.base_quantity = (self.broker.getvalue() * self.p.base_pct) // self.sma[0]
+        # self.base_price = 62789.00
+        # self.upperTrack = 73891.00
+        # self.lowerTrack = 53497.00
+        self.base_price = 87174.00
+        # self.upperTrack = 98661.00
+        # self.lowerTrack = 89184.00
+        self.base_quantity = (self.broker.getvalue() * self.p.base_pct) // self.base_price
 
         print(f'\n=== LAYOUT ===')
         print(f'baseline: {self.base_price:.2f}',f'basequantity{self.base_quantity}')
@@ -181,25 +190,23 @@ class PercentageGridStrategy(Basic_Function):
         return [event for _, event in results]
 
     def next(self):
-        if self.is_trading(self.datas[0].datetime.datetime(0).date(), self.trading_period):
-            if not self.grid_initialized:
-                self.initialize_grid()
-                self.print_grid_layout()
-                self.grid_initialized = True
-                return
-            
-            current_price = self.data.close[0]
-            self.check_grid_triggers(current_price)
+        if not self.grid_initialized:
+            self.initialize_grid()
+            self.print_grid_layout()
+            self.grid_initialized = True
+            return
+        
+        current_price = self.data.close[0]
+        self.check_grid_triggers(current_price)
 
-
-            # current_date = self.datas[0].datetime.datetime(0).date()
-            # previous_date = self.datas[0].datetime.datetime(-1).date()
-            # if current_date != previous_date:
-            #     self.Hedger(current_date, current_price)
-
-        elif self.position.size != 0:
-            self.close()
-            self.grid_initialized = False
+        # current_time = self.datas[0].datetime.datetime(0).time()
+        # previous_time = self.datas[0].datetime.datetime(-1).time()
+        # if current_time.hour != previous_time.hour:
+        #     self.Hedger(current_price)
+        # current_date = self.datas[0].datetime.datetime(0).date()
+        # previous_date = self.datas[0].datetime.datetime(-1).date()
+        # if current_date != previous_date:
+        #     self.Hedger(current_date, current_price)
 
         self.record()
 
@@ -215,6 +222,7 @@ class PercentageGridStrategy(Basic_Function):
                     exectype=bt.Order.Limit,
                     price=upper_layer_price)
             
+            # print(current_layer)
             self.grids_status['current_layer'] += 1
 
         if current_price <= lower_layer_price:
@@ -222,9 +230,46 @@ class PercentageGridStrategy(Basic_Function):
                     exectype=bt.Order.Limit,
                     price=lower_layer_price)
             
+            # print(current_layer)
             self.grids_status['current_layer'] -= 1
-    
+
+    # def Hedger(self, current_price):
+
+    #     if self.current_hedgePosition == 0:
+
+    #         if current_price > self.grids_status['grid'][108]:
+    #             risk_exposure = self.upperTrack - current_price
+    #             spread = self.base_price*self.p.price_pct
+    #             ExposureQuantity = ((current_price + risk_exposure/2) * risk_exposure/spread)*self.base_quantity * 0 / current_price
+    #             PositionQuantity = (self.position.size*self.position.price) / current_price * 0.2
+
+    #             self.buy(size = int(ExposureQuantity+PositionQuantity))
+    #             print(f"Hedge Buy: {int(ExposureQuantity+PositionQuantity)}")
+    #             self.current_hedgePosition = int(ExposureQuantity+PositionQuantity)
+
+    #         if current_price < self.grids_status['grid'][92]:
+    #             risk_exposure = current_price - self.lowerTrack
+    #             spread = self.base_price*self.p.price_pct
+    #             ExposureQuantity = ((current_price - risk_exposure/2) * risk_exposure/spread)*self.base_quantity * 0 / current_price
+    #             PositionQuantity = (self.position.size*self.position.price) / current_price *0.2
+
+    #             self.sell(size = int(ExposureQuantity+PositionQuantity))
+    #             print(f"Hedge Sell: {int(ExposureQuantity+PositionQuantity)}")
+    #             self.current_hedgePosition = -int(ExposureQuantity+PositionQuantity)
+        
+    #     elif self.current_hedgePosition != 0:
+    #         if self.current_hedgePosition > 0 and current_price < self.grids_status['grid'][108]:
+    #             self.sell(size = abs(self.current_hedgePosition))
+    #             print("Hedge Close buy")
+    #             self.current_hedgePosition = 0
+
+    #         elif self.current_hedgePosition < 0 and current_price > self.grids_status['grid'][92]:
+    #             self.buy(size = abs(self.current_hedgePosition))
+    #             print("Hedge Close sell")
+    #             self.current_hedgePosition = 0
+
     def Hedger(self, current_date, current_price):
+
         if current_date in self.macd_record:
             signal = self.macd_record[current_date]
         else:
@@ -234,139 +279,40 @@ class PercentageGridStrategy(Basic_Function):
         result = self.get_track_prices(current_date, self.trading_period)
         upperTrack = None
         lowerTrack = None
+
         for track in result:
             if track['type'] == 'upperTrack':
                 upperTrack = track['price']
             elif track['type'] == 'lowerTrack':
                 lowerTrack = track['price']
 
+        upperTrack = self.upperTrack
+        lowerTrack = self.lowerTrack
         
         if signal == 'buy':
             if upperTrack != None:
                 risk_exposure = upperTrack - current_price
                 spread = self.base_price*self.p.price_pct
-                quantity = ((current_price + risk_exposure/2) * risk_exposure/spread)*self.base_quantity*0.3 / current_price
+                ExprsureQuantity = ((current_price + risk_exposure/2) * risk_exposure/spread) * self.base_quantity * 0.3 // current_price
+                PositionQuantity = (self.position.size*self.position.price) // current_price * 0.3
             else:
-                quantity = (self.position.size*self.position.price) / current_price
-            print("hedgeBuy", quantity, current_price)
+                ExprsureQuantity = 0
+                PositionQuantity = (self.position.size*self.position.price) // current_price * 0.5
+
+            print("Hedge Buy:", ExprsureQuantity + PositionQuantity, current_price)
             self.close()
-            self.buy(size=quantity)
+            self.buy(size = ExprsureQuantity + PositionQuantity)
 
         elif signal == 'sell':
             if lowerTrack != None:
                 risk_exposure = current_price - lowerTrack
                 spread = self.base_price*self.p.price_pct
-                quantity = ((current_price - risk_exposure/2) * risk_exposure/spread)*self.base_quantity*0.3 / current_price
+                ExprsureQuantity = ((current_price - risk_exposure/2) * risk_exposure/spread) * self.base_quantity * 0.3 // current_price
+                PositionQuantity = (self.position.size*self.position.price) // current_price * 0.3
             else:
-                quantity = (self.position.size*self.position.price) / current_price
+                ExprsureQuantity = 0
+                PositionQuantity = (self.position.size*self.position.price) // current_price * 0.5
                 
-            print("hedgeSell",quantity, current_price)
+            print("Hedge Sell:", ExprsureQuantity + PositionQuantity, current_price)
             self.close()
-            self.sell(size=quantity)
-
-class Hedger(Basic_Function):
-    params = (
-        ('macd_fast', 6),    # 快速 EMA 參數
-        ('macd_slow', 13),    # 慢速 EMA 參數
-        ('macd_signal', 5),   # 信號線 EMA 參數
-    )
-    
-    def __init__(self):
-        # 計算 MACD 指標
-        super().__init__()
-        self.macd = bt.ind.MACD(self.data,
-                                period_me1=self.params.macd_fast,
-                                period_me2=self.params.macd_slow,
-                                period_signal=self.params.macd_signal)
-        # 定義 MACD 與信號線的交叉
-        self.macd_cross = bt.ind.CrossOver(self.macd.macd, self.macd.signal)
-
-        self.macd_record = {}
-    
-    def trade_logic(self):
-        # 當沒有持倉時進行開倉判斷
-        if not self.position:
-            # 當 MACD 線向上穿越信號線，形成黃金交叉，進場做多
-            if self.macd_cross > 0:
-                self.macd_record[self.datas[0].datetime.datetime(0).date() + timedelta(days=1)] = 'buy'
-                self.buy()
-            # 當 MACD 線向下穿越信號線，形成死亡交叉，進場做空
-            elif self.macd_cross < 0:
-                self.macd_record[self.datas[0].datetime.datetime(0).date() + timedelta(days=1)] = 'sell'
-                self.sell()  # 建立空單
-        else:
-            # 若已有持多單，且出現死亡交叉則平倉
-            if self.position.size > 0 and self.macd_cross < 0:
-                self.macd_record[self.datas[0].datetime.datetime(0).date() + timedelta(days=1)] = 'sell'
-                self.close()
-                self.sell()
-            # 若已有持空單，且出現黃金交叉則平倉
-            elif self.position.size < 0 and self.macd_cross > 0:
-                self.macd_record[self.datas[0].datetime.datetime(0).date() + timedelta(days=1)] = 'buy'
-                self.close()
-                self.buy()
-    
-    def next(self):
-        # 呼叫自定義的交易邏輯
-        self.trade_logic()
-
-class Locater(bt.Strategy):
-
-    def __init__(self):
-        super().__init__()
-        self.tracks = {'lowerTrack':-1 , 'upperTrack':-1}
-        self.grid_switch = False
-        self.week_counter = 2
-        self.weekly_data = self.datas[1]
-        self.days_data = self.datas[0]
-        self.trading_period = {}
-        self.switch_recorder = False
-
-    def TrackAnnunciator(self, weekly_data):
-        low = weekly_data.low
-
-        if min(low[0], low[-1], low[-2]) == low[-1] and self.tracks['lowerTrack'] == -1:
-            self.tracks['lowerTrack'] = weekly_data.low[-1]
-
-
-            self.trading_period[self.datas[0].datetime.datetime(0).date() + timedelta(days=1)] = {"type":'lowerTrack', "price":self.tracks['lowerTrack']}
-            print(f"date:{self.datas[0].datetime.datetime(0)} lower:{self.tracks['lowerTrack']:5.2f} upper:{self.tracks['upperTrack']:5.2f}")
-
-        high = weekly_data.high
-
-        if max(high[0],high[-1],high[-2])==high[-1] and self.tracks['upperTrack'] == -1:
-            self.tracks['upperTrack'] = weekly_data.high[-1]
-
-            self.trading_period[self.datas[0].datetime.datetime(0).date() + timedelta(days=1)] = {"type":'upperTrack', "price":self.tracks['upperTrack']}
-            print(f"date:{self.datas[0].datetime.datetime(0)} lower:{self.tracks['lowerTrack']:5.2f} upper:{self.tracks['upperTrack']:5.2f}")
-
-    def BreakoutDetector(self, weekly_data, days_data):
-
-        if days_data.close[0] > self.tracks['upperTrack'] and self.tracks['upperTrack']!=-1:
-            print(f"breakout:{self.datas[0].datetime.datetime(0)} upper:{self.tracks['upperTrack']:5.2f}")
-            self.trading_period[self.datas[0].datetime.datetime(0).date()] = {"type":'breakout', "price":self.tracks['upperTrack']}
-
-
-            self.grid_switch = False
-            self.tracks['lowerTrack'] = -1
-            self.tracks['upperTrack'] = -1
-        elif days_data.close[0] < self.tracks['lowerTrack'] and self.tracks['lowerTrack']!=-1:
-            print(f"breakout:{self.datas[0].datetime.datetime(0)} lower:{self.tracks['lowerTrack']:5.2f}")
-            self.trading_period[self.datas[0].datetime.datetime(0).date()] = {"type":'breakout', "price":self.tracks['lowerTrack']}
-
-
-            self.grid_switch = False
-            self.tracks['lowerTrack'] = -1
-            self.tracks['upperTrack'] = -1
-
-    def next(self):
-        if len(self.weekly_data) >= 3 and len(self.weekly_data) > self.week_counter:
-            self.TrackAnnunciator(self.weekly_data)
-            if self.tracks['lowerTrack'] != -1 or self.tracks['upperTrack'] != -1:
-                self.grid_switch = True
-            
-            # if self.grid_switch:
-            self.week_counter = len(self.weekly_data)
-
-        self.BreakoutDetector(self.weekly_data, self.days_data)
-
+            self.sell(size = ExprsureQuantity + PositionQuantity)

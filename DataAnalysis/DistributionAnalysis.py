@@ -1,6 +1,6 @@
 import pandas as pd
 import plotly.express as px
-time_interval = "5m"
+time_interval = "1d"
 
 # 假設你的 BTC 資料存放在 'btc_daily.csv' 中，且包含 Date, Open, High, Low, Close 這幾個欄位
 df = pd.read_csv(rf'DataBase\BTCUSDT_all_{time_interval}_data.csv')
@@ -22,7 +22,7 @@ df = df.dropna(subset=['volatility'])
 fig = px.histogram(
     df,
     x='volatility',
-    nbins=500,
+    nbins=100,
     title=f'BTC {time_interval} volatility distribution',
     labels={'volatility': 'volatility (%)'},
     histnorm='percent'  # 此處將直方圖數值正規化為每個bin所占的比例
@@ -30,6 +30,5 @@ fig = px.histogram(
 fig.update_layout(template="plotly_white")
 
 fig.update_yaxes(tickformat=",.2f", ticksuffix="%")
-
 
 fig.show()
