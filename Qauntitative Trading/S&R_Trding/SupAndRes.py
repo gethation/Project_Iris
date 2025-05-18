@@ -2,6 +2,7 @@ import backtrader as bt
 import math
 import pickle
 from datetime import timedelta
+from datetime import datetime
 import json
 import pandas as pd
 
@@ -53,7 +54,7 @@ class Basic_Function(bt.Strategy):
         # 訂單處理完成後清空訂單追蹤
         self.order = None
 
-class SupportAndResistance(bt.Strategy):
+class SupportAndResistance(Basic_Function):
     params = (
         ("base_percentage", 10/100),   # 基础手数
     )
@@ -62,19 +63,46 @@ class SupportAndResistance(bt.Strategy):
 
         self.level_file = r'C:\Users\Huang\Work place\Project_Iris\Qauntitative Trading\S&R_Trding\levels.json'
         with open(self.level_file, 'r') as f:
-            levels = json.load(f)
-        
-        self.sup_low, self.sup_high = levels["support"]["lower"],    levels["support"]["upper"]
-        self.res_low, self.res_high = levels["resistance"]["lower"], levels["resistance"]["upper"]
-        # 中线
-        self.mid = (self.sup_high + self.res_low) / 2
-
-        self.base_size = math.floor(self.broker.getcash() * self.params.base_percentage / self.data.close[0])
+            self.levels = json.load(f)
     
-    # def init_SupRes(self):
+    def init_SupRes(self):
+        for interval in self.levels:
+            if (datetime.fromisoformat(interval['start']) <= self.datas[0].datetime.datetime(0) < datetime.fromisoformat(interval['end'])):
 
+                self.SupRes_Areas = interval['area']
+                break
+        
+        upper_expandArea = [[self.SupRes_Areas[0][0] * (1 + 0.8/100*(i+1)+ 0.2), 
+                             self.SupRes_Areas[0][0] * (1 + 0.8/100*(i+1))] for i in range(2)]
+        
+
+        lower_expandArea = [[self.SupRes_Areas[-1][1] * (1- 0.8/100*(i+1)), 
+                             self.SupRes_Areas[-1][1] * (1- 0.8/100*(i+1) - 0.2)] for i in range(2)]
+        
+        self.SupRes_Areas = upper_expandArea + self.SupRes_Areas + lower_expandArea
+            
+
+    def lock_levels(self):
+        self.sup_low = None
+        self.mid = None
+        self.base_size = None
+
+        for i in range(len(self.SupRes_Areas)-1):
+            if self.SupRes_Areas[i][1] >= self.data.close[0] and self.data.close[0] >= self.SupRes_Areas[i+1][0]:
+                self.sup_low, self.sup_high = self.SupRes_Areas[i+1][1], self.SupRes_Areas[i+1][0]
+                self.res_low, self.res_high = self.SupRes_Areas[i][1], self.SupRes_Areas[i][0]
+                break
+
+        if self.sup_low != None:
+            # 中线
+            self.mid = (self.sup_high + self.res_low) // 2
+            self.base_size = math.floor(self.broker.getcash() * self.params.base_percentage / self.data.close[0])
     
     def decision_making(self):
+
+        if self.sup_low == None:
+            return
+        
         ClosePrice = self.data.close[0]
         OpenPrice = self.data.open[0]
         stage = abs(self.position.size)
@@ -125,6 +153,7 @@ class SupportAndResistance(bt.Strategy):
 
         
     def next(self):
-
+        self.init_SupRes()
+        self.lock_levels()
         # 呼叫自定義的交易邏輯
         self.decision_making()

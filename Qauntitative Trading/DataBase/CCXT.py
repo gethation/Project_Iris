@@ -5,12 +5,16 @@ import pandas as pd
 
 # 初始化交易所
 exchange = ccxt.binance()
+# exchange = ccxt.okx({
+#     'enableRateLimit': True,
+# })
 
-# 參數設定
-symbol    = 'BTC/USDT'
-timeframe = '5m'
-since     = exchange.parse8601('2020-01-01T00:00:00Z')
-limit     = 1000
+# # 參數設定
+# symbol    = 'XAUT/USDT:USDT'
+symbol    = 'PAXG/USDT:USDT'
+timeframe = '1m'
+since     = exchange.parse8601('2025-04-10T00:00:00Z')
+limit     = 100
 
 # 計算每根 K 線對應的毫秒數
 ms_per_candle = exchange.parse_timeframe(timeframe) * 1000
@@ -37,11 +41,20 @@ while True:
 pbar.close()
 
 # 轉成 DataFrame
-df = pd.DataFrame(all_ohlcv, columns=['timestamp','open','high','low','close','volume'])
-df['datetime'] = pd.to_datetime(df['timestamp'], unit='ms')
-df.set_index('datetime', inplace=True)
+df = pd.DataFrame(all_ohlcv, columns=[
+    'timestamp', 'open', 'high', 'low', 'close', 'volume'
+])
+# 1. 将 timestamp(毫秒) 解析为带时区的 UTC 时间
+df.index = pd.to_datetime(df['timestamp'], unit='ms', utc=True)
+# 2. 转换到美东时间（考虑夏令时）
+df.index = df.index.tz_convert('America/New_York')
+# 3. （可选）去掉 tz 信息，变成普通的本地时间索引
+df.index = df.index.tz_localize(None)
+# 4. 删除冗余的 timestamp 列
+df.drop(columns=['timestamp'], inplace=True)
+
 
 # 存成 CSV
-output_path = fr"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\BTC_{timeframe}.csv"
+output_path = fr"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\PAXG_{timeframe}.csv"
 df.to_csv(output_path, index=True)
 print(f'已將 {symbol} {timeframe} 歷史數據儲存到：{output_path}')
