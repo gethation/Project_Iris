@@ -1,6 +1,7 @@
 import asyncio
 import os
 import datetime
+import time
 
 import ccxt.pro as ccxtpro
 import ccxt
@@ -13,33 +14,44 @@ def calc_price(base, pct_change, level):
     return round(price, 2)
 
 async def initialize_grid(base_price, exchange, symbol, order_size=0.1, levels_num=8, effective_pct=0.1/100):
-    grid_status = [{'price': base_price, 'order_id': None}]
+    grid_status = [{'price': base_price, 'order': None}]
 
     for i in range(1, levels_num + 1):
         price_up = calc_price(base_price, effective_pct, i)
         sell = await exchange.create_order(symbol, 'limit', 'sell', order_size, price_up)
-        grid_status.append({'price': price_up, 'order_id': sell['id']})
+        grid_status.append({'price': price_up, 'order': sell})
 
         price_down = calc_price(base_price, -effective_pct, i)
         buy = await exchange.create_order(symbol, 'limit', 'buy', order_size, price_down)
-        grid_status.append({'price': price_down, 'order_id': buy['id']})
+        grid_status.append({'price': price_down, 'order': buy})
 
     # 按 price 从大到小排序并返回
-    return sorted(grid_status, key=lambda x: x['price'], reverse=True)
-    
-def display_grid_status(grid_status):
-    # 清屏（Windows 用 cls，Linux/macOS 用 clear）
-    os.system('cls' if os.name == 'nt' else 'clear')
-    # 打印当前时间
-    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print(f"===== Grid Status @ {now} =====")
-    print(f"{'Idx':>3} | {'Price':>10} | {'Order ID':>20}")
-    print("-" * 40)
-    for idx, cell in enumerate(grid_status):
-        oid = cell['order_id'] or '─'
-        print(f"{idx:>3} | {cell['price']:>10.2f} | {oid:>20}")
-    print("\n")  # 留一行空白
+    return sorted(grid_status, key=lambda x: x['price'], reverse=True), base_price
 
+def display_grid_status(grid_status):
+    """
+    清屏并打印当前网格每一层的关键信息：
+      - 挂单价 price
+      - 方向 side
+      - 状态 status
+      - 订单 ID
+    """
+    # Windows 用 cls，Linux/Mac 用 clear
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  当前网格状态：")
+    print(f"{'Price':>10} | {'Side':^6} | {'Status':^8} | {'Order ID'}")
+    print('-' * 50)
+    for cell in grid_status:
+        price = cell['price']
+        order = cell['order']
+        if order:
+            side   = order.get('side', '—')
+            status = order.get('status', '—')
+            oid    = order.get('id',   '—')
+        else:
+            side, status, oid = ('—', 'None', '—')
+        print(f"{price:>10.2f} | {side:^6} | {status:^8} | {oid}")
+    print('-' * 50)
 
 async def run_grid(symbol, grid_ratio, order_size):
     exchange = ccxtpro.binance({
@@ -54,7 +66,7 @@ async def run_grid(symbol, grid_ratio, order_size):
     await exchange.load_markets()
 
     ticker = await exchange.watch_ticker(symbol)
-    grid_status = await initialize_grid(
+    grid_status, base_price = await initialize_grid(
         base_price=ticker['last'],
         exchange=exchange,
         symbol=symbol,
@@ -62,68 +74,55 @@ async def run_grid(symbol, grid_ratio, order_size):
         effective_pct=grid_ratio
     )
 
-    since = None
     display_grid_status(grid_status)
 
     while True:
-        # 只拉取 since 之后的新订单
-        orders = await exchange.watchOrders(symbol=symbol, since=since)
+        order_list = await exchange.fetchOrders(symbol=symbol, limit=100)
+        ticker = await exchange.fetchTicker(symbol)
+        closed_flag = False
 
-        # 收集所有成交格子的索引
-        filled = []
-        for idx, cell in enumerate(grid_status):
-            oid = cell['order_id']
-            if not oid:
-                continue
-            for o in orders:
-                if o.get('id') == oid and (
-                   o.get('status') == 'closed' or
-                   float(o.get('filled', 0)) >= float(o.get('amount', 0))
-                ):
-                    filled.append((idx, o))
+        # 更新已成交或部分成交的订单状态
+        for cell in grid_status:
+            if cell['order'] is None:
+                continue  # 安全跳过空单 :contentReference[oaicite:7]{index=7}
+            for order in order_list:
+                if cell['order'].get('id') == order.get('id'):
+                    status = order.get('status')
+                    if status == 'closed':  # 使用 'closed' 判断 :contentReference[oaicite:8]{index=8}
+                        cell['order'] = None
+                        closed_flag = True
+                    else:
+                        cell['order'] = order
                     break
 
-        if filled:
-            # 按买（升序）和卖（降序）分开处理
-            buy_idxs  = sorted([i for i,o in filled if o.get('side') == 'buy'])
-            sell_idxs = sorted([i for i,o in filled if o.get('side') == 'sell'], reverse=True)
-
-            # 先处理买单：向上挂卖单
-            for layer in buy_idxs:
-                grid_status[layer]['order_id'] = None
-                if layer - 1 >= 0:
-                    price_up = grid_status[layer - 1]['price']
-                    sell = await exchange.create_order(symbol, 'limit', 'sell', order_size, price_up)
-                    grid_status[layer - 1]['order_id'] = sell['id']
-
-            # 再处理卖单：向下挂买单
-            for layer in sell_idxs:
-                grid_status[layer]['order_id'] = None
-                if layer + 1 < len(grid_status):
-                    price_down = grid_status[layer + 1]['price']
-                    buy = await exchange.create_order(symbol, 'limit', 'buy', order_size, price_down)
-                    grid_status[layer + 1]['order_id'] = buy['id']
-
-            # ——在这里更新 since——
-            # 找出这批订单里最大的 timestamp（CCXT 的订单里通常有 'timestamp' 字段，单位是毫秒）
-            timestamps = [o.get('timestamp') for _,o in filled if o.get('timestamp') is not None]
-            if timestamps:
-                since = max(timestamps) -1 
-
-
-            ticker = await exchange.watch_ticker(symbol)
+        # 若有订单成交，重算中心价并补单
+        if closed_flag:
+            min_spread = float('inf')  # 无穷大初值 :contentReference[oaicite:9]{index=9}
+            center_price = base_price  # 默认中心价，防止未定义 :contentReference[oaicite:10]{index=10}
+            # 找到最接近当前价的空格子作为新中心
             for cell in grid_status:
-                if cell['order_id'] is None:
-                    side = 'sell' if cell['price'] > ticker['last'] else 'buy'
-                    new_o = await exchange.create_order(
+                if cell['order'] is not None:
+                    continue
+                spread = abs(cell['price'] - ticker['last'])
+                if spread < min_spread:
+                    min_spread = spread
+                    center_price = cell['price']
+            # 针对所有空格子重新挂单
+            for cell in grid_status:
+                if cell['order'] is None and cell['price'] != center_price:
+
+                    side = 'sell' if cell['price'] > center_price else 'buy'
+                    cell['order'] = await exchange.create_order(
                         symbol, 'limit', side, order_size, cell['price']
                     )
-                    cell['order_id'] = new_o['id']
+        
             display_grid_status(grid_status)
+        await asyncio.sleep(0.5)
+                
 
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # 適用於 Windows
-    asyncio.run(run_grid('BTC/USDT', 0.01/100, 0.01))
+    asyncio.run(run_grid('BTC/USDT', 0.05/100, 0.001))
 
 
             
