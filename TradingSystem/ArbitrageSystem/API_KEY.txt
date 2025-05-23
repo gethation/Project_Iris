@@ -1,0 +1,9 @@
+[MEXC]
+Access Key:mx0vglE8Jn7J9KJSut
+Secret Key:4071bd26fb984ea5909232d480873cbd
+[binance]
+Access Key:90tbMeBE1FQQBsmwSPHTSbFdA8LRdsL27oRE0rnaEznc0a3KVnI26S1tV6RDpwve
+Secret Key:34OilaBhzySnhCoIY2gFmvuFzX8U5ZSnllxtOm9NfvTQXxCeheHIcnkyKJ4tvrd3
+[Bybit]
+Access Key:WvQdYKShPIMXVGDPvn
+Secret Key:Y3Nx62HzOgzmA02RicNimnWeJNh3gH5hZkkJ

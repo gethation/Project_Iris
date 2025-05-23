@@ -3,10 +3,10 @@ import numpy as np
 import plotly.express as px
 
 # 读取数据
-df_x = pd.read_csv(r'DataBase\XAUT_MEXC1m.csv',
+df_x = pd.read_csv(r'DataBase\XAUT1m.csv',
                    parse_dates=['timestamp'],
                    index_col='timestamp')
-df_p = pd.read_csv(r'DataBase\PAXG_MEXC1m.csv',
+df_p = pd.read_csv(r'DataBase\PAXG1m.csv',
                    parse_dates=['timestamp'],
                    index_col='timestamp')
 

@@ -22,8 +22,8 @@ data = bt.feeds.GenericCSVData(
     openinterest=-1,  # 是否有持仓量列；-1 表示无此列
     timeframe=bt.TimeFrame.Minutes,  # 数据的周期
     compression=1,              # 每条数据合并多少周期（这里 1 分钟）
-    fromdate=datetime(2025, 5, 9, 17, 0, 0),   # 起始时间（含），用 datetime 对象
-    todate=datetime(2025, 5, 11, 19, 0, 0) # 结束时间（含），用 datetime 对象
+    fromdate=datetime(2025, 4, 21, 17, 0, 0),   # 起始时间（含），用 datetime 对象
+    todate=datetime(2025, 5, 21, 19, 0, 0) # 结束时间（含），用 datetime 对象
 )
 
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # from Arbitrage import TimeBoundGridStrategy
     from Combination import CombinedGridStrategy
     cerebro = bt.Cerebro()
-    cerebro.broker.setcommission(commission=0.02/100, mult = 10)  # 設定手續費
+    cerebro.broker.setcommission(commission=0.02/100, mult = 5)  # 設定手續費
     cerebro.broker.setcash(1e4)  # 設定初始資金為 100,000
     cerebro.addstrategy(CombinedGridStrategy)
     

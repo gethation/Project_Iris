@@ -4,12 +4,12 @@ from datetime import datetime, time
 class CombinedGridStrategy(bt.Strategy):
     params = dict(
         # —— 周一～周四 (Weekday) 网格参数 —— 
-        weekday_grid_ratio=0.1/100,
-        weekday_order_size=4.0,
+        weekday_grid_ratio=0.06/100,
+        weekday_order_size=2.0,
 
         # —— 周五 17:00～周日 17:00 (Weekend) 网格参数 —— 
         weekend_grid_ratio=0.1/100,
-        weekend_order_size=0.1,
+        weekend_order_size=1.0,
     )
 
     def __init__(self):
@@ -111,7 +111,7 @@ class CombinedGridStrategy(bt.Strategy):
                 return
 
             # 1c) 18:05 强制平仓
-            if self.state == 'WEEKDAY_REDUCE' and dt.time() >= time(18,2):
+            if self.state == 'WEEKDAY_REDUCE' and dt.time() >= time(18,3):
                 self.log("=== WEEKDAY FORCE FLAT ===")
                 # 先撤单，再市价平仓
                 for od in (self.buy_order, self.sell_order):
@@ -155,7 +155,7 @@ class CombinedGridStrategy(bt.Strategy):
         # （可选：在非网格窗口撤单并清状态）
         if self.state in ['WEEKDAY_GRID','WEEKDAY_REDUCE','WEEKEND_GRID']:
             # 不在合法区间时，先撤单
-            valid_wd = (wd<4 and time(17,0)<=dt.time()<time(18,2)) or is_weekend_period
+            valid_wd = (wd<4 and time(17,0)<=dt.time()<time(18,3)) or is_weekend_period
             if not valid_wd:
                 self.log("=== OUTSIDE WINDOW: CANCEL ALL & FLAT ===")
                 # 1) 撤掉所有限价单
