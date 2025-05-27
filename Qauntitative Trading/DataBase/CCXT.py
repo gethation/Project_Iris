@@ -5,13 +5,13 @@ import pandas as pd
 
 # 初始化交易所
 # exchange = ccxt.binance()
-exchange = ccxt.okx({
+exchange = ccxt.bybit({
     'enableRateLimit': True,
 })
 
 # # 參數設定
-symbol    = 'XAUT/USDT:USDT'
-# symbol    = 'PAXG/USDT:USDT'
+symbol    = 'PAXG/USDT:USDT'
+# symbol    = 'PAXG/USDT'
 timeframe = '1m'
 since     = exchange.parse8601('2025-04-10T00:00:00Z')
 limit     = 100
@@ -55,6 +55,6 @@ df.drop(columns=['timestamp'], inplace=True)
 
 
 # 存成 CSV
-output_path = fr"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\XAUT_{timeframe}.csv"
+output_path = fr"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\{symbol.split('/')[0]}_{timeframe}.csv"
 df.to_csv(output_path, index=True)
 print(f'已將 {symbol} {timeframe} 歷史數據儲存到：{output_path}')

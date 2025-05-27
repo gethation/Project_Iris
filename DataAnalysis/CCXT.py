@@ -17,9 +17,9 @@ exchange = ccxt.binance()
 
 # # 參數設定
 # symbol    = 'XAUT/USDT:USDT'
-symbol    = 'PAXG/USDT:USDT'
-timeframe = '1m'
-since     = exchange.parse8601('2025-05-01T00:00:00Z')
+symbol    = 'BTC/USDT'
+timeframe = '1h'
+since     = exchange.parse8601('2024-05-23T00:00:00Z')
 limit     = 500
 
 # 計算每根 K 線對應的毫秒數
@@ -62,6 +62,6 @@ df.drop(columns=['timestamp'], inplace=True)
 
 
 # 存成 CSV
-output_path = fr"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\PAXG_{timeframe}.csv"
+output_path = fr"C:\Users\Huang\Work place\Project_Iris\DataAnalysis\DataBase\{symbol.split('/')[0]}_{timeframe}.csv"
 df.to_csv(output_path, index=True)
 print(f'已將 {symbol} {timeframe} 歷史數據儲存到：{output_path}')

@@ -63,7 +63,7 @@ async def weekly_scheduler(symbol, exchange, grid_ratio, order_size, levels_num)
         print("← run_grid stopped\n")
 
 async def main():
-    symbol = 'XAUT/USDT'
+    symbol = 'XAUT/USDT:USDT'
     exchange = ccxtpro.bybit({
         'apiKey': 'WvQdYKShPIMXVGDPvn',            
         'secret': 'Y3Nx62HzOgzmA02RicNimnWeJNh3gH5hZkkJ',
@@ -73,14 +73,25 @@ async def main():
         },
     })
     await exchange.load_markets()
+    try:
+        await exchange.set_leverage(20, symbol)
+    except:
+        print('same leverage')
     print('Exchange initialized')
-    await exchange.set_leverage(20, symbol+':USDT')
 
-    await weekly_scheduler(symbol=symbol, 
-                           exchange=exchange, 
-                           grid_ratio=0.1/100, 
-                           order_size=0.05,
-                           levels_num=10)
+    try:
+        # 运行网格，直到抛出异常或被取消
+        await weekly_scheduler(
+            symbol=symbol,
+            exchange=exchange,
+            grid_ratio=0.1/100,
+            order_size=0.03,
+            levels_num=10,
+            base_price=None
+        )
+    finally:
+        # 不管是正常退出还是异常/中断，都确保调用 close()
+        await exchange.close()
 
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

@@ -22,7 +22,7 @@ async def wait_until(dt: datetime):
         print(f"\rCountdown to {target_str}: {hrs:02d}:{mins:02d}:{secs:02d}", end="", flush=True)
         await asyncio.sleep(1)
 
-async def daily_scheduler(symbol, exchange):
+async def daily_scheduler(symbol, exchange, grid_ratio, order_size, levels_num, base_price):
     while True:
         today = datetime.now(tz).date()
 
@@ -33,8 +33,10 @@ async def daily_scheduler(symbol, exchange):
         grid_task = asyncio.create_task(run_grid(
             symbol=symbol,
             exchange=exchange,
-            grid_ratio=0.1/100,
-            order_size=0.05
+            grid_ratio=grid_ratio,
+            order_size=order_size,
+            levels_num=levels_num,
+            base_price=None
         ))
         print("→ run_grid started")
 
@@ -48,7 +50,7 @@ async def daily_scheduler(symbol, exchange):
         print("→ reduce_position started")
 
         # 3) 18:03 停止减仓
-        t3 = tz.localize(datetime.combine(today, time(18, 3)))
+        t3 = tz.localize(datetime.combine(today, time(18, 2)))
         print(f"\n→ Next stop reduce_position at: {t3.strftime('%Y-%m-%d %H:%M:%S %Z')}")
         await wait_until(t3)
         red_task.cancel()
@@ -67,16 +69,35 @@ async def daily_scheduler(symbol, exchange):
 
 async def main():
 
-    symbol = 'PAXG/USDT'
-    exchange = ccxtpro.binanceusdm({
-        'apiKey': '90tbMeBE1FQQBsmwSPHTSbFdA8LRdsL27oRE0rnaEznc0a3KVnI26S1tV6RDpwve',
-        'secret': '34OilaBhzySnhCoIY2gFmvuFzX8U5ZSnllxtOm9NfvTQXxCeheHIcnkyKJ4tvrd3',
-        'adjustForTimeDifference': True,
+    symbol = 'XAUT/USDT:USDT'
+    exchange = ccxtpro.bybit({
+        'apiKey': 'WvQdYKShPIMXVGDPvn',            
+        'secret': 'Y3Nx62HzOgzmA02RicNimnWeJNh3gH5hZkkJ',
+        'enableRateLimit': True,
+        'options': {
+            'defaultType': 'future',
+        },
     })
     await exchange.load_markets()
-    print('exchage has already set up')
-    await exchange.setLeverage(10, symbol)
-    await daily_scheduler(symbol, exchange)
+    try:
+        await exchange.set_leverage(20, symbol)
+    except:
+        print('same leverage')
+    print('Exchange initialized')
+
+    try:
+        # 运行网格，直到抛出异常或被取消
+        await daily_scheduler(
+            symbol=symbol,
+            exchange=exchange,
+            grid_ratio=0.1/100,
+            order_size=0.08,
+            levels_num=2,
+            base_price=None
+        )
+    finally:
+        # 不管是正常退出还是异常/中断，都确保调用 close()
+        await exchange.close()
 
 if __name__ == "__main__":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

@@ -7,3 +7,6 @@ Secret Key:34OilaBhzySnhCoIY2gFmvuFzX8U5ZSnllxtOm9NfvTQXxCeheHIcnkyKJ4tvrd3
 [Bybit]
 Access Key:WvQdYKShPIMXVGDPvn
 Secret Key:Y3Nx62HzOgzmA02RicNimnWeJNh3gH5hZkkJ
+[Bybit Testnet]
+Access Key:k4OrTO6dEQnWZQYnri
+Secret Key:N8yyP2ysCZAwFd7S9HGegrsEZDVn53cwdhtu
